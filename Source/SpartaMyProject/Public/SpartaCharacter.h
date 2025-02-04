@@ -31,6 +31,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void AddHealth(float Amount);
 
+	void ActivateSlowDebuff();
+	void ActivateControlReversalDebuff();
+	void ActivateBlindDebuff();
+
 protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
@@ -69,6 +73,24 @@ protected:
 private:
 
 	float NormalSpeed;
+
 	float SprintSpeedMultiplier;
 	float SprintSpeed;
+	bool bIsSprinting = false;
+
+
+	float CurrentDebuffedSpeedMultiplier;
+	float DebuffedSpeedMultiplier;
+
+	float SlowDebuffTime = 5.0f;
+	float ControlReversalDebuffTime = 5.0f;
+	float BlindDebuffTime = 5.0f;
+
+	FTimerHandle SlowDebuffTimerHandle;
+	FTimerHandle ControlDebuffTimerHandle;
+	FTimerHandle BlindDebuffTimerHandle;
+
+	bool bIsSlowDebuffActivated = false;
+	bool bIsControlReversalDebuffActivated = false;
+	bool bIsBlindDebuffActivated = false;
 };

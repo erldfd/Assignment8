@@ -18,9 +18,14 @@ ASpartaCharacter::ASpartaCharacter()
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 	CameraComp->bUsePawnControlRotation = false;
 
+	CameraComp->PostProcessSettings.VignetteIntensity = 1.0f;
+	CameraComp->PostProcessSettings.AutoExposureBias = -4.0f;
+
 	NormalSpeed = 600.0f;
 	SprintSpeedMultiplier = 1.7f;
 	SprintSpeed = NormalSpeed * SprintSpeedMultiplier;
+	CurrentDebuffedSpeedMultiplier = 1.0f;
+	DebuffedSpeedMultiplier = 0.5f;
 
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 
@@ -98,7 +103,25 @@ void ASpartaCharacter::Move(const FInputActionValue& Value)
 	// GetActorForwardVector나 GetActorRightVector 함수를 쓰려면 컨트롤러가 존재해야해서 체크 해준다.
 	if (!Controller) return;
 
-	const FVector2D MoveInput = Value.Get<FVector2D>();
+	FVector2D MoveInput = Value.Get<FVector2D>();
+
+	if (bIsControlReversalDebuffActivated)
+	{
+		MoveInput.X = -MoveInput.X;
+		MoveInput.Y = -MoveInput.Y;
+	}
+
+	if (GetCharacterMovement())
+	{
+		if (bIsSprinting)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = SprintSpeed * CurrentDebuffedSpeedMultiplier;
+		}
+		else
+		{
+			GetCharacterMovement()->MaxWalkSpeed = NormalSpeed * CurrentDebuffedSpeedMultiplier;
+		}
+	}
 
 	if (!FMath::IsNearlyZero(MoveInput.X))
 	{
@@ -137,18 +160,12 @@ void ASpartaCharacter::Look(const FInputActionValue& Value)
 
 void ASpartaCharacter::StartSprint(const FInputActionValue& Value)
 {	
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-	}
+	bIsSprinting = true;
 }
 
 void ASpartaCharacter::StopSprint(const FInputActionValue& Value)
 {
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
-	}
+	bIsSprinting = false;
 }
 
 float ASpartaCharacter::GetHealth() const
@@ -160,6 +177,56 @@ void ASpartaCharacter::AddHealth(float Amount)
 {
 	Health = FMath::Clamp(Health + Amount, 0.0f, MaxHealth);
 	UE_LOG(LogTemp, Warning, TEXT("Heath Increased To : %f"), Health);
+}
+
+void ASpartaCharacter::ActivateSlowDebuff()
+{
+	bIsSlowDebuffActivated = true;
+	CurrentDebuffedSpeedMultiplier = DebuffedSpeedMultiplier;
+	
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.0f, FColor::Red, TEXT("Slow Actiavted"));
+
+	GetWorldTimerManager().SetTimer(SlowDebuffTimerHandle, [&]()
+		{
+
+			CurrentDebuffedSpeedMultiplier = 1.0f;
+			bIsSlowDebuffActivated = false;
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.0f, FColor::Red, TEXT("Slow Removed"));
+
+		}, SlowDebuffTime, false);
+}
+
+void ASpartaCharacter::ActivateControlReversalDebuff()
+{
+	bIsControlReversalDebuffActivated = true;
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.0f, FColor::Red, TEXT("Moves Are Reveresed"));
+
+	GetWorldTimerManager().SetTimer(ControlDebuffTimerHandle, [&]()
+	{
+		bIsControlReversalDebuffActivated = false;
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.0f, FColor::Red, TEXT("Moves Return To Normal"));
+
+	}, ControlReversalDebuffTime, false);
+}
+
+void ASpartaCharacter::ActivateBlindDebuff()
+{
+	bIsBlindDebuffActivated = true;
+
+	CameraComp->PostProcessSettings.bOverride_VignetteIntensity = true;
+	CameraComp->PostProcessSettings.bOverride_AutoExposureBias = true;
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.0f, FColor::Red, TEXT("You Are Blind"));
+
+	GetWorldTimerManager().SetTimer(BlindDebuffTimerHandle, [&]()
+		{
+			bIsBlindDebuffActivated = false;
+			
+			CameraComp->PostProcessSettings.bOverride_VignetteIntensity = false;
+			CameraComp->PostProcessSettings.bOverride_AutoExposureBias = false;
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.0f, FColor::Red, TEXT("You Are Not Blind Now"));
+
+		}, BlindDebuffTime, false);
+
 }
 
 float ASpartaCharacter::TakeDamage(

@@ -1,6 +1,8 @@
-
 #include "SpartaPlayerController.h"
+
 #include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "EnhancedInputLibrary.h"
 
 ASpartaPlayerController::ASpartaPlayerController() : 
 	InputMappingContext(nullptr),

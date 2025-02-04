@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+
 #include "SpartaPlayerController.generated.h"
 
 
@@ -17,7 +18,6 @@ class SPARTAMYPROJECT_API ASpartaPlayerController : public APlayerController
 
 public:
 	ASpartaPlayerController();
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputMappingContext* InputMappingContext;
