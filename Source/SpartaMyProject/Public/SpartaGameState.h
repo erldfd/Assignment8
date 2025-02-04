@@ -49,6 +49,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Score")
 	void AddScore(int32 Amount);
 
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	void SubtractScore(int32 Amount);
+
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	void OnGameOver();
 
@@ -56,4 +59,16 @@ public:
 	void OnLevelTimeUp();
 	void OnCoinCollected();
 	void EndLevel();
+
+
+private:
+
+	void StartWave();
+
+private:
+
+	int32 CurrentWaveNumber = 0;
+
+	UPROPERTY(EditAnywhere, Category = "Level")
+	int32 MaxWaveNumber = 3;
 };

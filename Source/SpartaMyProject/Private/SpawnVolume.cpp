@@ -63,8 +63,6 @@ FItemSpawnRow* ASpawnVolume::GetRandomItem() const
 	}
 
 	return nullptr;
-
-	return nullptr;
 }
 
 FVector ASpawnVolume::GetRandomPointInVolume() const

@@ -40,6 +40,11 @@ void ASpartaGameState::AddScore(int32 Amount)
 	}
 }
 
+void ASpartaGameState::SubtractScore(int32 Amount)
+{
+	AddScore(-Amount);
+}
+
 void ASpartaGameState::StartLevel()
 {
 	if (UGameInstance* GameInstance = GetGameInstance())
@@ -54,38 +59,10 @@ void ASpartaGameState::StartLevel()
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
 
-	TArray<AActor*> FoundVolumes;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
+	UE_LOG(LogTemp, Warning, TEXT("Level %d Start"),
+		CurrentLevelIndex + 1);
 
-	const int32 ItemToSpawn = 40;
-
-	for (int32 i = 0; i < ItemToSpawn; ++i)
-	{
-		if (FoundVolumes.Num() > 0)
-		{
-			ASpawnVolume* SpawnVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
-			if (SpawnVolume)
-			{
-				AActor* SpawnedActor = SpawnVolume->SpawnRandomItem();
-				if (SpawnedActor && SpawnedActor->IsA(ACoinItem::StaticClass()))
-				{
-					SpawnedCoinCount++;
-				}
-			}
-		}
-	}
-
-	GetWorldTimerManager().SetTimer(
-		LevelTimerHandle,
-		this,
-		&ASpartaGameState::OnLevelTimeUp,
-		LevelDuration,
-		false 
-	);
-
-	UE_LOG(LogTemp, Warning, TEXT("Level %d Start, Spawned %d coin"),
-		CurrentLevelIndex + 1,
-		SpawnedCoinCount);
+	StartWave();
 }
 
 void ASpartaGameState::OnLevelTimeUp()
@@ -140,4 +117,53 @@ void ASpartaGameState::EndLevel()
 void ASpartaGameState::OnGameOver()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Game Over"));
+}
+
+void ASpartaGameState::StartWave()
+{
+	CurrentWaveNumber++;
+	
+	TArray<AActor*> FoundVolumes;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
+
+	const int32 ItemToSpawn = 40 * CurrentWaveNumber;
+
+	for (int32 i = 0; i < ItemToSpawn; ++i)
+	{
+		if (FoundVolumes.Num() > 0)
+		{
+			ASpawnVolume* SpawnVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
+			if (SpawnVolume)
+			{
+				AActor* SpawnedActor = SpawnVolume->SpawnRandomItem();
+				if (SpawnedActor && SpawnedActor->IsA(ACoinItem::StaticClass()))
+				{
+					SpawnedCoinCount++;
+				}
+			}
+		}
+	}
+
+	if (CurrentWaveNumber < MaxWaveNumber)
+	{
+		GetWorldTimerManager().SetTimer(
+			LevelTimerHandle,
+			this,
+			&ASpartaGameState::StartWave,
+			LevelDuration,
+			false
+		);
+	}
+	else
+	{
+		GetWorldTimerManager().SetTimer(
+			LevelTimerHandle,
+			this,
+			&ASpartaGameState::OnLevelTimeUp,
+			LevelDuration,
+			false
+		);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Start Wave %d, Spawned %d coin"), CurrentWaveNumber, SpawnedCoinCount);
 }
